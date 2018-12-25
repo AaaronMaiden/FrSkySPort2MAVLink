@@ -18,67 +18,88 @@
 #include "FrSkySportDecoder.h"
 #include "SoftwareSerial.h"
 
-#define UPDATE_DELAY      1000 //ms
+#define BLUETOOTH         Serial
+#define UPDATE_DELAY      200 //ms
+#define TIME_OUT          2000 //ms
 
 
-FrSkySportSensorXjt xjt;
-FrSkySportSensorFcs fcs;
-FrSkySportSensorGps gps;
-FrSkySportSensorRpm rpm;
-FrSkySportSensorVario vario;
-FrSkySportDecoder decoder;
+FrSkySportSensorXjt xjtSensor;
+FrSkySportSensorFcs fcsSensor;
+FrSkySportSensorGps gpsSensor;
+FrSkySportSensorRpm rpmSensor;
+FrSkySportSensorVario varioSensor;
+FrSkySportDecoder smartPortDecoder;
 
 
 
-uint32_t currentTime, displayTime;
+uint32_t currentTime,bluetoothTime,lastReceived;
 uint16_t decodeResult;
 
 void setup(){
-  decoder.begin(FrSkySportSingleWireSerial::SOFT_SERIAL_PIN_3,&xjt,&fcs,&gps,&rpm,&vario);
-  Serial.begin(57600);
+  smartPortDecoder.begin(FrSkySportSingleWireSerial::SOFT_SERIAL_PIN_3,&xjtSensor,&fcsSensor,&gpsSensor,&rpmSensor,&varioSensor);
+  BLUETOOTH.begin(57600);
 }
 
 void loop(){
-  decodeResult = decoder.decode();
-  if(decodeResult != SENSOR_NO_DATA_ID){
-    Serial.print("   :)   Decoded data with AppID 0x"); Serial.println(decodeResult, HEX);
-  }
+  decodeResult = smartPortDecoder.decode();
+  if(decodeResult != SENSOR_NO_DATA_ID) lastReceived = millis();
   
   currentTime = millis();
-  if(currentTime > displayTime){
-    displayTime = currentTime + UPDATE_DELAY;
+  if((currentTime > bluetoothTime) && ((currentTime - lastReceived) < TIME_OUT)){
+    bluetoothTime = currentTime + UPDATE_DELAY;
 
-    Serial.println("");
+    BLUETOOTH.print(xjtSensor.getRssi());
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(xjtSensor.getAdc1());
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(xjtSensor.getAdc2());
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(xjtSensor.getRxBatt(),2);
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(xjtSensor.getSwr());
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(fcsSensor.getCurrent());
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(fcsSensor.getVoltage(),2);
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(varioSensor.getAltitude(),1);
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(varioSensor.getVsi(),1);
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(gpsSensor.getLat(),6);
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(gpsSensor.getLon(),6);
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(gpsSensor.getAltitude(),1);
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(gpsSensor.getSpeed(),1);
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(gpsSensor.getCog());
+    BLUETOOTH.print(",");
+    /*
+    gpsSensor.getDay()
+    gpsSensor.getMonth()
+    gpsSensor.getYear()
+    gpsSensor.getHour()
+    gpsSensor.getMinute()
+    gpsSensor.getSecond()
+    */
+    BLUETOOTH.print(xjtSensor.getAccX());
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(xjtSensor.getAccY());
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(xjtSensor.getAccZ());
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(rpmSensor.getRpm());
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(rpmSensor.getT1());
+    BLUETOOTH.print(",");
+    BLUETOOTH.print(rpmSensor.getT1());
 
-    Serial.print("BASIC: RSSI = "); Serial.print(xjt.getRssi());
-    Serial.print(", ADC1 = "); Serial.print(xjt.getAdc1());
-    Serial.print("V, ADC2 = "); Serial.print(xjt.getAdc2());
-    Serial.print("V, RxBatt = "); Serial.print(xjt.getRxBatt());
-    Serial.print("V, SWR = "); Serial.println(xjt.getSwr());
+    BLUETOOTH.println("");
 
-    Serial.print("FCS: current = "); Serial.print(fcs.getCurrent());
-    Serial.print("A, voltage = "); Serial.print(fcs.getVoltage()); Serial.println("V");
-
-    Serial.print("VARIO: altitude = "); Serial.print(vario.getAltitude());
-    Serial.print("m, VSI = "); Serial.print(vario.getVsi()); Serial.println("m/s");
-
-    Serial.print("GPS: lat = "); Serial.print(gps.getLat(), 6); Serial.print(", lon = "); Serial.print(gps.getLon(), 6);
-    Serial.print(", altitude = "); Serial.print(gps.getAltitude());
-    Serial.print("m, speed = "); Serial.print(gps.getSpeed());
-    Serial.print("m/s, COG = "); Serial.print(gps.getCog());
-    char dateTimeStr[18]; 
-    sprintf(dateTimeStr, "%02u-%02u-%04u %02u:%02u:%02u", gps.getDay(), gps.getMonth(), gps.getYear() + 2000, gps.getHour(), gps.getMinute(), gps.getSecond());
-    Serial.print(", date/time = "); Serial.println(dateTimeStr);
-
-    Serial.print("TAS: ACCX = "); Serial.print(xjt.getAccX());
-    Serial.print("G, ACCY = "); Serial.print(xjt.getAccY());
-    Serial.print("G, ACCZ = "); Serial.print(xjt.getAccZ()); Serial.println("G");
-
-    Serial.print("RPM: RPM = "); Serial.print(rpm.getRpm()*2);
-    Serial.print(", T1 = "); Serial.print(rpm.getT1());
-    Serial.print(" deg. C, T2 = "); Serial.print(rpm.getT1()); Serial.println(" deg. C");
-
-
-    Serial.println("");
   }
+
+
+  
 }
