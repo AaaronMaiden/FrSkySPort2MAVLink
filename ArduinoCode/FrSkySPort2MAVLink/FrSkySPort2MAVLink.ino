@@ -34,7 +34,7 @@ uint32_t currentTime, displayTime;
 uint16_t decodeResult;
 
 void setup(){
-  decoder.begin(FrSkySportSingleWireSerial::SOFT_SERIAL_PIN_3, &xjt, &fcs, &gps, &rpm, &vario);
+  decoder.begin(FrSkySportSingleWireSerial::SOFT_SERIAL_PIN_3,&xjt,&fcs,&gps,&rpm,&vario);
   Serial.begin(57600);
 }
 
